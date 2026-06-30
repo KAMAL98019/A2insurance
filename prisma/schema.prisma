@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ───────────────────────────────────────────────────────────────────
+
+model User {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  email       String   @unique @db.VarChar(191)
+  phoneNumber String   @map("phone_number") @db.VarChar(20)
+  password    String   @db.VarChar(255)
+  role        Role     @default(USER)
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+// ─── Vehicle Categories ──────────────────────────────────────────────────────
+
+model VehicleCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(50)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("vehicle_categories")
+}
+
+// ─── Vehicle Records ─────────────────────────────────────────────────────────
+
+model VehicleRecord {
+  id                Int      @id @default(autoincrement())
+  vehicleNumber     String   @db.VarChar(50) @map("vehicle_number")
+  ownerName         String   @db.VarChar(100) @map("owner_name")
+  cellNumber        String   @db.VarChar(20) @map("cell_number")
+  cellNumberAlt     String?  @db.VarChar(20) @map("cell_number_alt")
+  category          String   @db.VarChar(50)
+  policyExpiryDate  DateTime @db.Date @map("policy_expiry_date")
+  insuranceCompany  String   @db.VarChar(150) @map("insurance_company")
+  rcDocument        String?  @db.VarChar(500) @map("rc_document")
+  insuranceDocument String?  @db.VarChar(500) @map("insurance_document")
+  aadhaarDocument   String?  @db.VarChar(500) @map("aadhaar_document")
+  panDocument       String?  @db.VarChar(500) @map("pan_document")
+  photo             String?  @db.VarChar(500)
+  odDocument        String?  @db.VarChar(500) @map("od_document")
+  tpDocument        String?  @db.VarChar(500) @map("tp_document")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  renewals          VehicleRenewal[]
+  notificationLogs  NotificationLog[]
+
+  @@map("vehicle_records")
+}
+
+// ─── Renewal Tracking ────────────────────────────────────────────────────────
+
+model VehicleRenewal {
+  id              Int           @id @default(autoincrement())
+  vehicleRecordId Int           @map("vehicle_record_id")
+  vehicleRecord   VehicleRecord @relation(fields: [vehicleRecordId], references: [id], onDelete: Cascade)
+  status          RenewalStatus @default(CONTACTED)
+  notes           String?       @db.Text
+  renewedDate     DateTime?     @map("renewed_date")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  @@map("vehicle_renewals")
+}
+
+// ─── Notification Settings ───────────────────────────────────────────────────
+
+model NotificationSettings {
+  id                   Int      @id @default(autoincrement())
+  firstAlertDays       Int      @default(30) @map("first_alert_days")
+  secondAlertDays      Int      @default(15) @map("second_alert_days")
+  finalAlertDays       Int      @default(7)  @map("final_alert_days")
+  enableWhatsApp       Boolean  @default(true)  @map("enable_whatsapp")
+  enableEmail          Boolean  @default(false) @map("enable_email")
+  enableSms            Boolean  @default(false) @map("enable_sms")
+  schedulerHour        Int      @default(8)    @map("scheduler_hour")
+  language             String   @default("english") @db.VarChar(10)  @map("language")
+  contactName          String?  @db.VarChar(100) @map("contact_name")
+  contactPhone         String?  @db.VarChar(20)  @map("contact_phone")
+  contactAddress       String?  @db.VarChar(300) @map("contact_address")
+  whatsappApiKey       String?  @db.VarChar(500) @map("whatsapp_api_key")
+  whatsappApiUrl       String?  @db.VarChar(500) @map("whatsapp_api_url")
+  whatsappMessageId    String   @default("23258")            @db.VarChar(50)  @map("whatsapp_message_id")
+  whatsappPhoneNumberId String  @default("1092173950656058") @db.VarChar(100) @map("whatsapp_phone_number_id")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt      @map("updated_at")
+
+  @@map("notification_settings")
+}
+
+// ─── Notification Logs ───────────────────────────────────────────────────────
+
+model NotificationLog {
+  id               Int              @id @default(autoincrement())
+  vehicleRecordId  Int?             @map("vehicle_record_id")
+  vehicleRecord    VehicleRecord?   @relation(fields: [vehicleRecordId], references: [id], onDelete: SetNull)
+  mobileNumber     String           @db.VarChar(20)  @map("mobile_number")
+  notificationType NotificationType @map("notification_type")
+  message          String           @db.Text
+  status           NotifStatus      @default(PENDING)
+  response         String?          @db.Text
+  sentAt           DateTime         @default(now())  @map("sent_at")
+
+  @@map("notification_logs")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum RenewalStatus {
+  CONTACTED
+  DOCS_COLLECTED
+  PROCESSING
+  PAYMENT_PENDING
+  RENEWED
+  CANCELLED
+}
+
+enum NotificationType {
+  EXPIRY_30
+  EXPIRY_15
+  EXPIRY_7
+  EXPIRY_TODAY
+  EXPIRED
+  RENEWED
+  MANUAL
+}
+
+enum NotifStatus {
+  SENT
+  FAILED
+  PENDING
+}
