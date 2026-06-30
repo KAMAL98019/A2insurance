@@ -16,6 +16,8 @@ export class WhatsAppWebService implements OnModuleInit {
   constructor(private readonly gateway: AppNotificationGateway) {}
 
   async onModuleInit() {
+    if (process.env.ENABLE_WHATSAPP_WEB !== 'true') return;
+
     process.on('unhandledRejection', (reason: any) => {
       const msg = reason?.message ?? String(reason);
       if (
@@ -71,6 +73,8 @@ export class WhatsAppWebService implements OnModuleInit {
         // WhatsApp Web navigates internally during load — this is transient, retry quickly
         this.logger.warn('WhatsApp page reloaded during startup (transient) — retrying in 6s...');
         this.scheduleReconnect(6_000);
+      } else if (msg.includes('Could not find Chrome') || msg.includes('Failed to launch') || msg.includes('Browser was not found')) {
+        this.logger.warn('WhatsApp Web disabled — Chrome not available on this server. Use HTTP WhatsApp API instead.');
       } else {
         this.logger.error(`WhatsApp init error: ${msg}`);
         this.scheduleReconnect(15_000);
