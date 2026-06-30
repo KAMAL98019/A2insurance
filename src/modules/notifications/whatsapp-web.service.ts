@@ -162,6 +162,7 @@ export class WhatsAppWebService implements OnModuleInit {
   }
 
   async refreshQR() {
+    if (!this.client) return;
     this.ready = false;
     this.qrString = null;
     await this.client.destroy().catch(() => {});
