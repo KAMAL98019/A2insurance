@@ -1,7 +1,12 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 export class CreateVehicleRecordDto {
+  @ApiPropertyOptional({ example: 1, description: 'Defaults to the caller\'s primary location if omitted' })
+  @IsOptional()
+  @IsInt()
+  locationId?: number;
+
   @ApiProperty({ example: 'MH12AB1234' })
   @IsString()
   @Length(1, 50)

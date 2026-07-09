@@ -3,6 +3,10 @@ import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { LabourRenewalsService } from './labour-renewals.service';
 import { CreateLabourRenewalDto } from './dto/create-labour-renewal.dto';
 import { UpdateLabourRenewalDto } from './dto/update-labour-renewal.dto';
+import { RequireModulePermission } from '../../common/decorators/require-permission.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
+const MODULE = 'labour-renewals';
 
 @ApiTags('Labour Renewals')
 @ApiBearerAuth()
@@ -10,9 +14,18 @@ import { UpdateLabourRenewalDto } from './dto/update-labour-renewal.dto';
 export class LabourRenewalsController {
   constructor(private readonly service: LabourRenewalsService) {}
 
-  @Get() findAll(@Query('labourInsuranceId') id?: string) { return this.service.findAll(id ? +id : undefined); }
-  @Get(':id') findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
-  @Post() create(@Body() dto: CreateLabourRenewalDto) { return this.service.create(dto); }
-  @Patch(':id') update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLabourRenewalDto) { return this.service.update(id, dto); }
-  @Delete(':id') remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+  @Get() @RequireModulePermission(MODULE, 'view')
+  findAll(@Query('labourInsuranceId') id: string | undefined, @CurrentUser() user: Express.User) { return this.service.findAll(user, id ? +id : undefined); }
+
+  @Get(':id') @RequireModulePermission(MODULE, 'view')
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: Express.User) { return this.service.findOne(id, user); }
+
+  @Post() @RequireModulePermission(MODULE, 'create')
+  create(@Body() dto: CreateLabourRenewalDto, @CurrentUser() user: Express.User) { return this.service.create(dto, user); }
+
+  @Patch(':id') @RequireModulePermission(MODULE, 'update')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLabourRenewalDto, @CurrentUser() user: Express.User) { return this.service.update(id, dto, user); }
+
+  @Delete(':id') @RequireModulePermission(MODULE, 'delete')
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: Express.User) { return this.service.remove(id, user); }
 }

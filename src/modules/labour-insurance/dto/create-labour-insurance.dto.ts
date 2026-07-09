@@ -2,6 +2,7 @@ import { IsString, IsOptional, IsEnum, IsDateString, IsNumber, IsInt } from 'cla
 import { Type } from 'class-transformer';
 
 export class CreateLabourInsuranceDto {
+  @IsOptional() @IsInt() locationId?: number;
   @IsString() policyNumber: string;
   @IsString() insuranceCompanyName: string;
   @IsString() insuredName: string;

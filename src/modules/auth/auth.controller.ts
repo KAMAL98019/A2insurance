@@ -32,6 +32,14 @@ export class AuthController {
   }
 
   @Public()
+  @Get('master-exists')
+  @ApiOperation({ summary: 'Check whether a Master Admin has already been provisioned' })
+  @ApiOkResponse({ description: 'Returns true if public registration should be disabled' })
+  masterExists() {
+    return this.authService.masterAdminExists();
+  }
+
+  @Public()
   @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Request a password reset (admin-assisted)' })

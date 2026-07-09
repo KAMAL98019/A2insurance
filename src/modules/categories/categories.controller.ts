@@ -22,21 +22,21 @@ export class CategoriesController {
   }
 
   @Post()
-  @Roles(Role.ADMIN)
+  @Roles(Role.MASTER_ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Create a category (admin only)' })
   create(@Body() dto: CreateCategoryDto) {
     return this.service.create(dto);
   }
 
   @Put(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.MASTER_ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Update a category (admin only)' })
   update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateCategoryDto) {
     return this.service.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles(Role.ADMIN)
+  @Roles(Role.MASTER_ADMIN, Role.SUPER_ADMIN)
   @ApiOperation({ summary: 'Delete a category (admin only)' })
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.service.remove(id);

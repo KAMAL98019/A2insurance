@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsDateString, IsEmail, IsEnum, IsNumber, IsOptional,
+  IsDateString, IsEmail, IsEnum, IsInt, IsNumber, IsOptional,
   IsString, Length, Matches, Min, ValidateNested, IsArray,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -67,6 +67,11 @@ export class FamilyMemberDto {
 }
 
 export class CreateHealthInsuranceDto {
+  @ApiPropertyOptional({ example: 1, description: 'Defaults to the caller\'s primary location if omitted' })
+  @IsOptional()
+  @IsInt()
+  locationId?: number;
+
   // ── Basic Policy Details ────────────────────────────────────────────────────
 
   @ApiProperty({ example: 'HDFC-2024-001' })

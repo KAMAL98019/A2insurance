@@ -20,6 +20,9 @@ import { FireRenewalsModule } from './modules/fire-renewals/fire-renewals.module
 import { LabourInsuranceModule } from './modules/labour-insurance/labour-insurance.module';
 import { LabourRenewalsModule } from './modules/labour-renewals/labour-renewals.module';
 import { LeadSourcesModule }   from './modules/lead-sources/lead-sources.module';
+import { LocationsModule } from './modules/locations/locations.module';
+import { PermissionsModule } from './modules/permissions/permissions.module';
+import { AccessControlModule } from './common/access-control/access-control.module';
 
 @Module({
   imports: [
@@ -27,8 +30,11 @@ import { LeadSourcesModule }   from './modules/lead-sources/lead-sources.module'
     ScheduleModule.forRoot(),
     PrismaModule,
     CloudinaryModule,
+    AccessControlModule,
     AuthModule,
     UsersModule,
+    LocationsModule,
+    PermissionsModule,
     VehicleRecordsModule,
     DashboardModule,
     UploadModule,

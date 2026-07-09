@@ -1,6 +1,6 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
-  IsArray, IsDateString, IsEmail, IsEnum, IsNumber,
+  IsArray, IsDateString, IsEmail, IsEnum, IsInt, IsNumber,
   IsOptional, IsString, Length, Matches, Min, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -13,6 +13,11 @@ import {
 } from './create-health-insurance.dto';
 
 export class UpdateHealthInsuranceDto {
+  @ApiPropertyOptional({ example: 1 })
+  @IsOptional()
+  @IsInt()
+  locationId?: number;
+
   @ApiPropertyOptional() @IsOptional() @IsString() @Length(1, 100)
   policyNumber?: string;
 

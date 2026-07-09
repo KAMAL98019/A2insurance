@@ -1,7 +1,8 @@
-import { IsString, IsOptional, IsEnum, IsDateString, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsEnum, IsDateString, IsInt, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateFireInsuranceDto {
+  @IsOptional() @IsInt() locationId?: number;
   @IsString() policyNumber: string;
   @IsString() insuranceCompanyName: string;
   @IsString() insuredName: string;

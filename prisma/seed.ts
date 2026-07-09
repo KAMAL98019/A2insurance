@@ -13,14 +13,14 @@ async function main() {
       email: 'admin@a2insurance.com',
       phoneNumber: '+1 555 000 0001',
       password: await bcrypt.hash('Admin1234', SALT),
-      role: Role.ADMIN,
+      role: Role.MASTER_ADMIN,
     },
     {
       name: 'John Doe',
       email: 'john@a2insurance.com',
       phoneNumber: '+1 555 000 0002',
       password: await bcrypt.hash('User1234', SALT),
-      role: Role.USER,
+      role: Role.ADMIN_USER,
     },
   ];
 

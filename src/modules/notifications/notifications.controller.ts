@@ -5,6 +5,7 @@ import { NotificationsService } from './notifications.service';
 import { SendManualDto } from './dto/send-manual.dto';
 import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { IsString } from 'class-validator';
+import { Roles } from '../../common/decorators/roles.decorator';
 
 class TestConnectionDto {
   @IsString()
@@ -15,7 +16,10 @@ class TestConnectionDto {
 export class NotificationsController {
   constructor(private readonly svc: NotificationsService) {}
 
+  // WhatsApp connect/scan is Super Admin only — they run day-to-day org
+  // operations and hold the phone that gets linked.
   @Get('whatsapp-status')
+  @Roles('SUPER_ADMIN')
   getWhatsAppStatus() {
     return this.svc.getWhatsAppStatus();
   }
@@ -26,11 +30,13 @@ export class NotificationsController {
   }
 
   @Get('whatsapp-qr')
+  @Roles('SUPER_ADMIN')
   getWhatsAppQR() {
     return this.svc.getWhatsAppQR();
   }
 
   @Post('whatsapp-refresh')
+  @Roles('SUPER_ADMIN')
   refreshWhatsAppQR() {
     return this.svc.refreshWhatsAppQR();
   }
@@ -61,6 +67,7 @@ export class NotificationsController {
   }
 
   @Post('test')
+  @Roles('SUPER_ADMIN')
   testConnection(@Body() dto: TestConnectionDto) {
     return this.svc.testConnection(dto.mobileNumber);
   }

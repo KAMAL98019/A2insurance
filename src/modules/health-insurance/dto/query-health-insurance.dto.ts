@@ -3,6 +3,9 @@ import { IsEnum, IsNumberString, IsOptional, IsString } from 'class-validator';
 import { HealthCustomerType, HealthPolicyStatus, HealthPolicyType } from './create-health-insurance.dto';
 
 export class QueryHealthInsuranceDto {
+  @ApiPropertyOptional() @IsOptional() @IsNumberString()
+  locationId?: string;
+
   @ApiPropertyOptional() @IsOptional() @IsString()
   search?: string;
 

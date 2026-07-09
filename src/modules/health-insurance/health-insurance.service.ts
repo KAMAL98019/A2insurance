@@ -1,7 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CloudinaryService } from '../upload/cloudinary.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { AccessControlService } from '../../common/access-control/access-control.service';
 import { CreateHealthInsuranceDto } from './dto/create-health-insurance.dto';
 import { UpdateHealthInsuranceDto } from './dto/update-health-insurance.dto';
 import { QueryHealthInsuranceDto } from './dto/query-health-insurance.dto';
@@ -16,10 +17,14 @@ export class HealthInsuranceService {
     private readonly prisma: PrismaService,
     private readonly cloudinary: CloudinaryService,
     private readonly notifications: NotificationsService,
+    private readonly accessControl: AccessControlService,
   ) {}
 
-  findAll(query: QueryHealthInsuranceDto = {}) {
-    const where: Prisma.HealthInsuranceWhereInput = {};
+  async findAll(actor: Express.User, query: QueryHealthInsuranceDto = {}) {
+    const locationWhere = await this.accessControl.buildLocationScopeWhere(
+      actor, query.locationId ? Number(query.locationId) : undefined,
+    );
+    const where: Prisma.HealthInsuranceWhereInput = { ...locationWhere };
 
     if (query.policyStatus) where.policyStatus = query.policyStatus;
     if (query.policyType)   where.policyType   = query.policyType;
@@ -62,21 +67,29 @@ export class HealthInsuranceService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, actor: Express.User) {
     const record = await this.prisma.healthInsurance.findUnique({
       where: { id },
       include: { familyMembers: { orderBy: { createdAt: 'asc' } } },
     });
     if (!record) throw new NotFoundException(`Health insurance #${id} not found`);
+    await this.accessControl.assertCanAccessLocation(actor, record.locationId);
     return record;
   }
 
-  create(dto: CreateHealthInsuranceDto) {
+  async create(dto: CreateHealthInsuranceDto, actor: Express.User) {
+    const locationId = dto.locationId ?? actor.primaryLocationId;
+    if (!locationId) {
+      throw new BadRequestException('locationId is required — no default location on your account');
+    }
+    await this.accessControl.assertCanAccessLocation(actor, locationId);
+
     const { familyMembers, ...data } = dto;
 
     return this.prisma.healthInsurance.create({
       data: {
         ...data,
+        locationId,
         policyStartDate: new Date(data.policyStartDate),
         policyEndDate:   new Date(data.policyEndDate),
         renewalDate:     new Date(data.renewalDate),
@@ -96,9 +109,13 @@ export class HealthInsuranceService {
     });
   }
 
-  async update(id: number, dto: UpdateHealthInsuranceDto) {
-    const existing = await this.findOne(id);
+  async update(id: number, dto: UpdateHealthInsuranceDto, actor: Express.User) {
+    const existing = await this.findOne(id, actor);
     const { familyMembers, ...data } = dto;
+
+    if (data.locationId && data.locationId !== existing.locationId) {
+      await this.accessControl.assertCanAccessLocation(actor, data.locationId);
+    }
 
     // Delete replaced Cloudinary files (fire-and-forget)
     const destroyOps: Promise<void>[] = [];
@@ -136,8 +153,8 @@ export class HealthInsuranceService {
     });
   }
 
-  async remove(id: number) {
-    const existing = await this.findOne(id);
+  async remove(id: number, actor: Express.User) {
+    const existing = await this.findOne(id, actor);
 
     const destroyOps = DOC_FIELDS
       .filter((f) => existing[f as DocField])
@@ -147,13 +164,15 @@ export class HealthInsuranceService {
     return this.prisma.healthInsurance.delete({ where: { id } });
   }
 
-  getUpcomingRenewals(days = 30) {
+  async getUpcomingRenewals(actor: Express.User, days = 30) {
+    const locationWhere = await this.accessControl.buildLocationScopeWhere(actor);
     const now    = new Date();
     const future = new Date();
     future.setDate(future.getDate() + days);
 
     return this.prisma.healthInsurance.findMany({
       where: {
+        ...locationWhere,
         renewalDate:  { gte: now, lte: future },
         policyStatus: { not: 'CANCELLED' },
       },
@@ -166,18 +185,20 @@ export class HealthInsuranceService {
     });
   }
 
-  async getStats() {
+  async getStats(actor: Express.User) {
+    const locationWhere = await this.accessControl.buildLocationScopeWhere(actor);
     const now        = new Date();
     const in30Days   = new Date();
     in30Days.setDate(in30Days.getDate() + 30);
 
     const [total, active, expired, pendingRenewal, upcomingRenewals] = await Promise.all([
-      this.prisma.healthInsurance.count(),
-      this.prisma.healthInsurance.count({ where: { policyStatus: 'ACTIVE' } }),
-      this.prisma.healthInsurance.count({ where: { policyStatus: 'EXPIRED' } }),
-      this.prisma.healthInsurance.count({ where: { policyStatus: 'PENDING_RENEWAL' } }),
+      this.prisma.healthInsurance.count({ where: locationWhere }),
+      this.prisma.healthInsurance.count({ where: { ...locationWhere, policyStatus: 'ACTIVE' } }),
+      this.prisma.healthInsurance.count({ where: { ...locationWhere, policyStatus: 'EXPIRED' } }),
+      this.prisma.healthInsurance.count({ where: { ...locationWhere, policyStatus: 'PENDING_RENEWAL' } }),
       this.prisma.healthInsurance.count({
         where: {
+          ...locationWhere,
           renewalDate:  { gte: now, lte: in30Days },
           policyStatus: { not: 'CANCELLED' },
         },
@@ -189,8 +210,8 @@ export class HealthInsuranceService {
 
   // ── WhatsApp manual send ──────────────────────────────────────────────────
 
-  async sendWhatsApp(id: number, customMessage?: string) {
-    const record = await this.findOne(id);
+  async sendWhatsApp(id: number, actor: Express.User, customMessage?: string) {
+    const record = await this.findOne(id, actor);
 
     if (!this.notifications.getWhatsAppStatus().connected) {
       return { success: false, message: 'WhatsApp not connected. Go to Settings to scan the QR code.' };

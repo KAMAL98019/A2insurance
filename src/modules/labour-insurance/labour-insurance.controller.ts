@@ -4,6 +4,10 @@ import { LabourInsuranceService } from './labour-insurance.service';
 import { CreateLabourInsuranceDto } from './dto/create-labour-insurance.dto';
 import { UpdateLabourInsuranceDto } from './dto/update-labour-insurance.dto';
 import { QueryLabourInsuranceDto } from './dto/query-labour-insurance.dto';
+import { RequireModulePermission } from '../../common/decorators/require-permission.decorator';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
+
+const MODULE = 'labour-insurance';
 
 @ApiTags('Labour Insurance')
 @ApiBearerAuth()
@@ -11,10 +15,21 @@ import { QueryLabourInsuranceDto } from './dto/query-labour-insurance.dto';
 export class LabourInsuranceController {
   constructor(private readonly service: LabourInsuranceService) {}
 
-  @Get() findAll(@Query() q: QueryLabourInsuranceDto) { return this.service.findAll(q); }
-  @Get('stats') getStats() { return this.service.getStats(); }
-  @Get(':id') findOne(@Param('id', ParseIntPipe) id: number) { return this.service.findOne(id); }
-  @Post() create(@Body() dto: CreateLabourInsuranceDto) { return this.service.create(dto); }
-  @Put(':id') update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLabourInsuranceDto) { return this.service.update(id, dto); }
-  @Delete(':id') remove(@Param('id', ParseIntPipe) id: number) { return this.service.remove(id); }
+  @Get() @RequireModulePermission(MODULE, 'view')
+  findAll(@Query() q: QueryLabourInsuranceDto, @CurrentUser() user: Express.User) { return this.service.findAll(user, q); }
+
+  @Get('stats') @RequireModulePermission(MODULE, 'view')
+  getStats(@CurrentUser() user: Express.User) { return this.service.getStats(user); }
+
+  @Get(':id') @RequireModulePermission(MODULE, 'view')
+  findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: Express.User) { return this.service.findOne(id, user); }
+
+  @Post() @RequireModulePermission(MODULE, 'create')
+  create(@Body() dto: CreateLabourInsuranceDto, @CurrentUser() user: Express.User) { return this.service.create(dto, user); }
+
+  @Put(':id') @RequireModulePermission(MODULE, 'update')
+  update(@Param('id', ParseIntPipe) id: number, @Body() dto: UpdateLabourInsuranceDto, @CurrentUser() user: Express.User) { return this.service.update(id, dto, user); }
+
+  @Delete(':id') @RequireModulePermission(MODULE, 'delete')
+  remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: Express.User) { return this.service.remove(id, user); }
 }

@@ -1,7 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, Length, Matches } from 'class-validator';
 
 export class UpdateVehicleRecordDto {
+  @ApiPropertyOptional({ example: 1, description: 'Reassign to a different location (Master/Super Admin only, in practice)' })
+  @IsOptional()
+  @IsInt()
+  locationId?: number;
+
   @ApiPropertyOptional({ example: 'MH12AB1234' })
   @IsOptional() @IsString() @Length(1, 50)
   vehicleNumber?: string;

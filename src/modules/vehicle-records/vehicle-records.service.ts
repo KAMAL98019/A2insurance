@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CloudinaryService } from '../upload/cloudinary.service';
+import { AccessControlService } from '../../common/access-control/access-control.service';
 import { CreateVehicleRecordDto } from './dto/create-vehicle-record.dto';
 import { UpdateVehicleRecordDto } from './dto/update-vehicle-record.dto';
 
@@ -21,10 +22,13 @@ export class VehicleRecordsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly cloudinary: CloudinaryService,
+    private readonly accessControl: AccessControlService,
   ) {}
 
-  findAll() {
+  async findAll(actor: Express.User, requestedLocationId?: number) {
+    const where = await this.accessControl.buildLocationScopeWhere(actor, requestedLocationId);
     return this.prisma.vehicleRecord.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: {
         renewals: {
@@ -39,20 +43,31 @@ export class VehicleRecordsService {
     });
   }
 
-  async findOne(id: number) {
+  async findOne(id: number, actor: Express.User) {
     const record = await this.prisma.vehicleRecord.findUnique({ where: { id } });
     if (!record) throw new NotFoundException(`Vehicle record #${id} not found`);
+    await this.accessControl.assertCanAccessLocation(actor, record.locationId);
     return record;
   }
 
-  create(dto: CreateVehicleRecordDto) {
+  async create(dto: CreateVehicleRecordDto, actor: Express.User) {
+    const locationId = dto.locationId ?? actor.primaryLocationId;
+    if (!locationId) {
+      throw new BadRequestException('locationId is required — no default location on your account');
+    }
+    await this.accessControl.assertCanAccessLocation(actor, locationId);
+
     return this.prisma.vehicleRecord.create({
-      data: { ...dto, policyExpiryDate: new Date(dto.policyExpiryDate) },
+      data: { ...dto, locationId, policyExpiryDate: new Date(dto.policyExpiryDate) },
     });
   }
 
-  async update(id: number, dto: UpdateVehicleRecordDto) {
-    const existing = await this.findOne(id);
+  async update(id: number, dto: UpdateVehicleRecordDto, actor: Express.User) {
+    const existing = await this.findOne(id, actor);
+
+    if (dto.locationId && dto.locationId !== existing.locationId) {
+      await this.accessControl.assertCanAccessLocation(actor, dto.locationId);
+    }
 
     // Delete replaced Cloudinary files (fire-and-forget, non-fatal)
     const destroyOps: Promise<void>[] = [];
@@ -74,8 +89,8 @@ export class VehicleRecordsService {
     });
   }
 
-  async remove(id: number) {
-    const existing = await this.findOne(id);
+  async remove(id: number, actor: Express.User) {
+    const existing = await this.findOne(id, actor);
 
     // Delete all associated Cloudinary files on record deletion
     const destroyOps = DOC_FIELDS
