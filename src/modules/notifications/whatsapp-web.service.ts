@@ -12,6 +12,7 @@ export class WhatsAppWebService implements OnModuleInit {
   private ready = false;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private qrString: string | null = null;
+  private qrNotifyCount = 0;
 
   constructor(private readonly gateway: AppNotificationGateway) {}
 
@@ -90,12 +91,17 @@ export class WhatsAppWebService implements OnModuleInit {
       this.qrString = qr;
       this.logger.warn('📱 Scan this QR code with WhatsApp (one-time only):');
       qrcode.generate(qr, { small: true });
-      this.gateway.push({
-        type: 'whatsapp_qr',
-        title: 'WhatsApp QR Ready',
-        message: 'New QR code generated. Go to Settings → WhatsApp Connection to scan it.',
-        severity: 'info',
-      });
+      // WhatsApp Web regenerates the QR every ~20-60s until scanned — only
+      // notify the first couple of times per session so this doesn't spam.
+      if (this.qrNotifyCount < 2) {
+        this.qrNotifyCount++;
+        this.gateway.push({
+          type: 'whatsapp_qr',
+          title: 'WhatsApp QR Ready',
+          message: 'New QR code generated. Go to Settings → WhatsApp Connection to scan it.',
+          severity: 'info',
+        });
+      }
     });
 
     this.client.on('authenticated', () => {
@@ -105,6 +111,7 @@ export class WhatsAppWebService implements OnModuleInit {
     this.client.on('ready', () => {
       this.ready = true;
       this.qrString = null;
+      this.qrNotifyCount = 0;
       this.logger.log('WhatsApp client ready ✓');
       this.gateway.push({
         type: 'whatsapp_connected',
@@ -128,6 +135,7 @@ export class WhatsAppWebService implements OnModuleInit {
 
     this.client.on('disconnected', (reason) => {
       this.ready = false;
+      this.qrNotifyCount = 0;
       this.logger.warn(`WhatsApp disconnected: ${reason} — reconnecting in 10s...`);
       this.gateway.push({
         type: 'whatsapp_disconnected',
