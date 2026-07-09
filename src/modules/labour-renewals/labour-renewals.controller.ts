@@ -6,7 +6,8 @@ import { UpdateLabourRenewalDto } from './dto/update-labour-renewal.dto';
 import { RequireModulePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-const MODULE = 'labour-renewals';
+// Renewals aren't a standalone menu item — share the parent module's permission.
+const MODULE = 'labour-insurance';
 
 @ApiTags('Labour Renewals')
 @ApiBearerAuth()

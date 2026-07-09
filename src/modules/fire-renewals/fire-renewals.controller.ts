@@ -6,7 +6,8 @@ import { UpdateFireRenewalDto } from './dto/update-fire-renewal.dto';
 import { RequireModulePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-const MODULE = 'fire-renewals';
+// Renewals aren't a standalone menu item — share the parent module's permission.
+const MODULE = 'fire-insurance';
 
 @ApiTags('Fire Renewals')
 @ApiBearerAuth()

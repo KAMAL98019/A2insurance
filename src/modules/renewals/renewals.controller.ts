@@ -9,7 +9,10 @@ import { UpdateRenewalDto } from './dto/update-renewal.dto';
 import { RequireModulePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-const MODULE = 'renewals';
+// Renewals aren't a standalone menu item — they're accessed from within
+// Vehicle Records, so they share that module's permission grant rather
+// than needing their own separate toggle in the permission matrix.
+const MODULE = 'vehicle-records';
 
 @ApiTags('Renewals')
 @ApiBearerAuth()

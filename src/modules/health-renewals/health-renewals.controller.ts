@@ -9,7 +9,8 @@ import { UpdateHealthRenewalDto } from './dto/update-health-renewal.dto';
 import { RequireModulePermission } from '../../common/decorators/require-permission.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
-const MODULE = 'health-renewals';
+// Renewals aren't a standalone menu item — share the parent module's permission.
+const MODULE = 'health-insurance';
 
 @ApiTags('Health Renewals')
 @ApiBearerAuth()
