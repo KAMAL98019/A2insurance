@@ -48,7 +48,8 @@ export class NotificationsService {
       orderBy: { sentAt: 'desc' },
       take: limit,
       include: {
-        vehicleRecord: { select: { vehicleNumber: true, ownerName: true } },
+        vehicleRecord:   { select: { vehicleNumber: true, ownerName: true } },
+        healthInsurance: { select: { policyNumber: true, policyHolderName: true } },
       },
     });
   }
@@ -229,6 +230,129 @@ export class NotificationsService {
     });
   }
 
+  // ── Health Insurance alerts ───────────────────────────────────────────────
+
+  private buildHealthRenewalMessage(
+    holderName: string,
+    policyNumber: string,
+    renewalDate: Date,
+    daysLeft: number,
+    language = 'english',
+    settings?: { contactName?: string | null; contactPhone?: string | null; contactAddress?: string | null },
+  ): string {
+    const dateStr = renewalDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+    const isTamil = language === 'tamil';
+    const footer  = this.buildFooter(language, settings ?? {});
+
+    if (daysLeft <= 0) {
+      return isTamil
+        ? `அன்புள்ள ${holderName},\n\n⚠️ உங்கள் ஆரோக்கிய காப்பீடு (*${policyNumber}*) ${dateStr} அன்று *புதுப்பிக்க வேண்டிய தேதி*.\n\nதாமதிக்காமல் புதுப்பிக்கவும்.${footer}`
+        : `Dear ${holderName},\n\n⚠️ Your health insurance policy (*${policyNumber}*) renewal was due on ${dateStr}.\n\nPlease renew immediately to avoid a coverage gap.${footer}`;
+    }
+
+    if (daysLeft <= 7) {
+      return isTamil
+        ? `அன்புள்ள ${holderName},\n\n🚨 *அவசரம்!* உங்கள் ஆரோக்கிய காப்பீடு (*${policyNumber}*) வெறும் *${daysLeft} நாட்களில்* (${dateStr}) புதுப்பிக்க வேண்டும்.\n\nதாமதிக்காமல் இப்போதே தொடர்பு கொள்ளவும்.${footer}`
+        : `Dear ${holderName},\n\n🚨 *URGENT!* Your health insurance policy (*${policyNumber}*) renewal is due in just *${daysLeft} days* (${dateStr}).\n\nPlease contact us immediately to renew your coverage.${footer}`;
+    }
+
+    if (daysLeft <= 15) {
+      return isTamil
+        ? `அன்புள்ள ${holderName},\n\n🔔 நினைவூட்டல்: உங்கள் ஆரோக்கிய காப்பீடு (*${policyNumber}*) *${daysLeft} நாட்களில்* (${dateStr}) புதுப்பிக்க வேண்டும்.\n\nசீக்கிரமே புதுப்பிக்கவும்.${footer}`
+        : `Dear ${holderName},\n\n🔔 Reminder: Your health insurance policy (*${policyNumber}*) renewal is due in *${daysLeft} days* (${dateStr}).\n\nPlease renew soon to ensure continuous coverage.${footer}`;
+    }
+
+    return isTamil
+      ? `அன்புள்ள ${holderName},\n\n📋 முன்னறிவிப்பு: உங்கள் ஆரோக்கிய காப்பீடு (*${policyNumber}*) *${daysLeft} நாட்களில்* (${dateStr}) புதுப்பிக்க வேண்டும்.\n\nசமயத்தில் புதுப்பிக்க திட்டமிடவும்.${footer}`
+      : `Dear ${holderName},\n\n📋 Advance Notice: Your health insurance policy (*${policyNumber}*) renewal is due in *${daysLeft} days* (${dateStr}).\n\nPlease plan for renewal in advance.${footer}`;
+  }
+
+  async sendHealthRenewalAlert(
+    health: { id: number; policyNumber: string; policyHolderName: string; mobileNumber: string; renewalDate: Date },
+    type: NotificationType,
+    daysLeft: number,
+  ) {
+    const settings = await this.getSettings();
+    if (!settings.enableWhatsApp) {
+      this.logger.warn('WhatsApp disabled — skipping health alert');
+      return;
+    }
+    if (!this.whatsapp.isReady()) {
+      this.logger.warn('WhatsApp not connected — skipping health alert');
+      return;
+    }
+
+    const message = this.buildHealthRenewalMessage(
+      health.policyHolderName, health.policyNumber, health.renewalDate, daysLeft, settings.language, settings,
+    );
+
+    const log = await this.prisma.notificationLog.create({
+      data: {
+        healthInsuranceId: health.id,
+        mobileNumber:      health.mobileNumber,
+        notificationType:  type,
+        message,
+        status: NotifStatus.PENDING,
+      },
+    });
+
+    const result = await this.whatsapp.send(health.mobileNumber, message);
+
+    await this.prisma.notificationLog.update({
+      where: { id: log.id },
+      data: { status: result.success ? NotifStatus.SENT : NotifStatus.FAILED, response: result.response },
+    });
+
+    this.logger.log(`Health ${type} → ${health.policyNumber} (${health.mobileNumber}): ${result.success ? 'SENT' : 'FAILED'}`);
+  }
+
+  async processScheduledHealthAlerts() {
+    const settings = await this.getSettings();
+    if (!settings.enableWhatsApp) return;
+
+    const now      = new Date();
+    const MSperDay = 86_400_000;
+
+    const buildRange = (daysAhead: number) => ({
+      gte: new Date(now.getTime() + (daysAhead - 1) * MSperDay),
+      lte: new Date(now.getTime() +  daysAhead      * MSperDay),
+    });
+
+    const [renewal30, renewal15, renewal7, overdue] = await Promise.all([
+      this.prisma.healthInsurance.findMany({
+        where: { renewalDate: buildRange(settings.firstAlertDays),  policyStatus: { not: 'CANCELLED' } },
+      }),
+      this.prisma.healthInsurance.findMany({
+        where: { renewalDate: buildRange(settings.secondAlertDays), policyStatus: { not: 'CANCELLED' } },
+      }),
+      this.prisma.healthInsurance.findMany({
+        where: { renewalDate: buildRange(settings.finalAlertDays),  policyStatus: { not: 'CANCELLED' } },
+      }),
+      this.prisma.healthInsurance.findMany({
+        where: { renewalDate: { gte: new Date(now.getTime() - 7 * MSperDay), lt: now }, policyStatus: { not: 'CANCELLED' } },
+      }),
+    ]);
+
+    type HealthJob = { record: { id: number; policyNumber: string; policyHolderName: string; mobileNumber: string; renewalDate: Date }; type: NotificationType; days: number };
+
+    const jobs: HealthJob[] = [
+      ...renewal30.map((r) => ({ record: r, type: NotificationType.EXPIRY_30, days: settings.firstAlertDays })),
+      ...renewal15.map((r) => ({ record: r, type: NotificationType.EXPIRY_15, days: settings.secondAlertDays })),
+      ...renewal7.map( (r) => ({ record: r, type: NotificationType.EXPIRY_7,  days: settings.finalAlertDays })),
+      ...overdue.map(  (r) => ({ record: r, type: NotificationType.EXPIRED,   days: 0 })),
+    ];
+
+    this.logger.log(`Found ${jobs.length} health insurance alerts to process`);
+
+    for (const job of jobs) {
+      try {
+        await this.sendHealthRenewalAlert(job.record, job.type, job.days);
+      } catch (err: any) {
+        this.logger.error(`Health alert failed for ${job.record.policyNumber}: ${err.message}`);
+      }
+    }
+  }
+
   async sendManual(dto: SendManualDto) {
     if (!this.whatsapp.isReady()) {
       return { success: false, message: 'WhatsApp not connected. Go to Settings to scan the QR code.' };
@@ -403,7 +527,10 @@ export class NotificationsService {
       }
     }
 
-    this.logger.log('Scheduled alerts check complete');
+    this.logger.log('Scheduled vehicle alerts check complete');
+
+    // ── Health Insurance renewal alerts ──────────────────────────
+    await this.processScheduledHealthAlerts();
 
     this.gateway.push({
       type: 'scheduler_done',

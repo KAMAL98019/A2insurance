@@ -24,6 +24,24 @@ export class DashboardService {
       trackCancelled,
       expirySoonRaw,
       categoryRaw,
+      // Health Insurance stats
+      healthTotal,
+      healthActive,
+      healthExpired,
+      healthPendingRenewal,
+      healthUpcoming,
+      // Fire Insurance stats
+      fireTotal,
+      fireActive,
+      fireExpired,
+      firePendingRenewal,
+      fireUpcoming,
+      // Labour Insurance stats
+      labourTotal,
+      labourActive,
+      labourExpired,
+      labourPendingRenewal,
+      labourUpcoming,
     ] = await Promise.all([
       // Vehicle overview
       this.prisma.vehicleRecord.count(),
@@ -63,6 +81,33 @@ export class DashboardService {
         _count: { id: true },
         orderBy: { _count: { id: 'desc' } },
       }),
+
+      // Health Insurance stats
+      this.prisma.healthInsurance.count(),
+      this.prisma.healthInsurance.count({ where: { policyStatus: 'ACTIVE' } }),
+      this.prisma.healthInsurance.count({ where: { policyStatus: 'EXPIRED' } }),
+      this.prisma.healthInsurance.count({ where: { policyStatus: 'PENDING_RENEWAL' } }),
+      this.prisma.healthInsurance.count({
+        where: { renewalDate: { gte: now, lte: in30Days }, policyStatus: { not: 'CANCELLED' } },
+      }),
+
+      // Fire Insurance stats
+      this.prisma.fireInsurance.count(),
+      this.prisma.fireInsurance.count({ where: { policyStatus: 'ACTIVE' } }),
+      this.prisma.fireInsurance.count({ where: { policyStatus: 'EXPIRED' } }),
+      this.prisma.fireInsurance.count({ where: { policyStatus: 'PENDING_RENEWAL' } }),
+      this.prisma.fireInsurance.count({
+        where: { renewalDate: { gte: now, lte: in30Days }, policyStatus: { not: 'CANCELLED' } },
+      }),
+
+      // Labour Insurance stats
+      this.prisma.labourInsurance.count(),
+      this.prisma.labourInsurance.count({ where: { policyStatus: 'ACTIVE' } }),
+      this.prisma.labourInsurance.count({ where: { policyStatus: 'EXPIRED' } }),
+      this.prisma.labourInsurance.count({ where: { policyStatus: 'PENDING_RENEWAL' } }),
+      this.prisma.labourInsurance.count({
+        where: { renewalDate: { gte: now, lte: in30Days }, policyStatus: { not: 'CANCELLED' } },
+      }),
     ]);
 
     const MS_PER_DAY = 86_400_000;
@@ -99,6 +144,33 @@ export class DashboardService {
         category: r.category,
         count:    r._count.id,
       })),
+
+      // Health Insurance overview
+      healthInsurance: {
+        total:          healthTotal,
+        active:         healthActive,
+        expired:        healthExpired,
+        pendingRenewal: healthPendingRenewal,
+        upcomingIn30:   healthUpcoming,
+      },
+
+      // Fire Insurance overview
+      fireInsurance: {
+        total:          fireTotal,
+        active:         fireActive,
+        expired:        fireExpired,
+        pendingRenewal: firePendingRenewal,
+        upcomingIn30:   fireUpcoming,
+      },
+
+      // Labour Insurance overview
+      labourInsurance: {
+        total:          labourTotal,
+        active:         labourActive,
+        expired:        labourExpired,
+        pendingRenewal: labourPendingRenewal,
+        upcomingIn30:   labourUpcoming,
+      },
     };
   }
 }

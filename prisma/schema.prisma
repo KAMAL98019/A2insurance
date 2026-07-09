@@ -23,13 +23,28 @@ model User {
   @@map("users")
 }
 
+// ─── Lead Sources ────────────────────────────────────────────────────────────
+
+model LeadSource {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(100)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("lead_sources")
+}
+
 // ─── Vehicle Categories ──────────────────────────────────────────────────────
 
 model VehicleCategory {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique @db.VarChar(50)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id        Int               @id @default(autoincrement())
+  name      String            @unique @db.VarChar(50)
+  parentId  Int?              @map("parent_id")
+  parent    VehicleCategory?  @relation("CategoryChildren", fields: [parentId], references: [id])
+  children  VehicleCategory[] @relation("CategoryChildren")
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
 
   @@map("vehicle_categories")
 }
@@ -103,17 +118,89 @@ model NotificationSettings {
 // ─── Notification Logs ───────────────────────────────────────────────────────
 
 model NotificationLog {
-  id               Int              @id @default(autoincrement())
-  vehicleRecordId  Int?             @map("vehicle_record_id")
-  vehicleRecord    VehicleRecord?   @relation(fields: [vehicleRecordId], references: [id], onDelete: SetNull)
-  mobileNumber     String           @db.VarChar(20)  @map("mobile_number")
-  notificationType NotificationType @map("notification_type")
-  message          String           @db.Text
-  status           NotifStatus      @default(PENDING)
-  response         String?          @db.Text
-  sentAt           DateTime         @default(now())  @map("sent_at")
+  id                 Int              @id @default(autoincrement())
+  vehicleRecordId    Int?             @map("vehicle_record_id")
+  vehicleRecord      VehicleRecord?   @relation(fields: [vehicleRecordId], references: [id], onDelete: SetNull)
+  healthInsuranceId  Int?             @map("health_insurance_id")
+  healthInsurance    HealthInsurance? @relation(fields: [healthInsuranceId], references: [id], onDelete: SetNull)
+  mobileNumber       String           @db.VarChar(20)  @map("mobile_number")
+  notificationType   NotificationType @map("notification_type")
+  message            String           @db.Text
+  status             NotifStatus      @default(PENDING)
+  response           String?          @db.Text
+  sentAt             DateTime         @default(now())  @map("sent_at")
 
   @@map("notification_logs")
+}
+
+// ─── Health Insurance ────────────────────────────────────────────────────────
+
+model HealthInsurance {
+  id                    Int                          @id @default(autoincrement())
+  policyNumber          String                       @unique @db.VarChar(100) @map("policy_number")
+  insuranceCompanyName  String                       @db.VarChar(150)         @map("insurance_company_name")
+  policyHolderName      String                       @db.VarChar(100)         @map("policy_holder_name")
+  mobileNumber          String                       @db.VarChar(20)          @map("mobile_number")
+  email                 String?                      @db.VarChar(191)
+  dateOfBirth           DateTime?                    @db.Date                 @map("date_of_birth")
+  gender                String?                      @db.VarChar(10)
+  address               String?                      @db.Text
+  policyType            HealthPolicyType             @map("policy_type")
+  policyStartDate       DateTime                     @db.Date                 @map("policy_start_date")
+  policyEndDate         DateTime                     @db.Date                 @map("policy_end_date")
+  renewalDate           DateTime                     @db.Date                 @map("renewal_date")
+  policyStatus          HealthPolicyStatus           @default(ACTIVE)         @map("policy_status")
+  sumInsured            Decimal                      @db.Decimal(12, 2)       @map("sum_insured")
+  premiumAmount         Decimal                      @db.Decimal(10, 2)       @map("premium_amount")
+  paymentMode           HealthPaymentMode?           @map("payment_mode")
+  customerType          HealthCustomerType           @default(NEW)            @map("customer_type")
+  leadSource            String?                      @db.VarChar(100)         @map("lead_source")
+  renewalReminderStatus String?                      @db.VarChar(50)          @map("renewal_reminder_status")
+  remarks               String?                      @db.Text
+  nomineeName           String?                      @db.VarChar(100)         @map("nominee_name")
+  nomineeRelationship   String?                      @db.VarChar(50)          @map("nominee_relationship")
+  nomineeMobileNumber   String?                      @db.VarChar(20)          @map("nominee_mobile_number")
+  policyDocument        String?                      @db.VarChar(500)         @map("policy_document")
+  idProof               String?                      @db.VarChar(500)         @map("id_proof")
+  medicalDocument       String?                      @db.VarChar(500)         @map("medical_document")
+  createdAt             DateTime                     @default(now())          @map("created_at")
+  updatedAt             DateTime                     @updatedAt               @map("updated_at")
+  familyMembers         HealthInsuranceFamilyMember[]
+  notificationLogs      NotificationLog[]
+  renewals              HealthInsuranceRenewal[]
+
+  @@map("health_insurance")
+}
+
+model HealthInsuranceFamilyMember {
+  id                 Int             @id @default(autoincrement())
+  healthInsuranceId  Int             @map("health_insurance_id")
+  healthInsurance    HealthInsurance @relation(fields: [healthInsuranceId], references: [id], onDelete: Cascade)
+  memberName         String          @db.VarChar(100) @map("member_name")
+  relationship       String          @db.VarChar(50)
+  dateOfBirth        DateTime?       @db.Date         @map("date_of_birth")
+  gender             String?         @db.VarChar(10)
+  medicalHistory     String?         @db.Text         @map("medical_history")
+  preExistingDisease String?         @db.VarChar(255) @map("pre_existing_disease")
+  createdAt          DateTime        @default(now())  @map("created_at")
+  updatedAt          DateTime        @updatedAt       @map("updated_at")
+
+  @@map("health_insurance_family_members")
+}
+
+// ─── Health Renewal Tracking ─────────────────────────────────────────────────
+
+model HealthInsuranceRenewal {
+  id                Int             @id @default(autoincrement())
+  healthInsuranceId Int             @map("health_insurance_id")
+  healthInsurance   HealthInsurance @relation(fields: [healthInsuranceId], references: [id], onDelete: Cascade)
+  status            RenewalStatus   @default(CONTACTED)
+  notes             String?         @db.Text
+  renewedDate       DateTime?       @map("renewed_date")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt      @map("updated_at")
+
+  @@map("health_insurance_renewals")
 }
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
@@ -146,4 +233,163 @@ enum NotifStatus {
   SENT
   FAILED
   PENDING
+}
+
+enum HealthPolicyType {
+  INDIVIDUAL
+  FAMILY_FLOATER
+  SENIOR_CITIZEN
+  GROUP_INSURANCE
+  CRITICAL_ILLNESS
+}
+
+enum HealthPolicyStatus {
+  ACTIVE
+  EXPIRED
+  PENDING_RENEWAL
+  CANCELLED
+}
+
+enum HealthPaymentMode {
+  CASH
+  UPI
+  CARD
+  BANK_TRANSFER
+}
+
+enum HealthCustomerType {
+  NEW
+  RENEWAL
+}
+
+// ─── Fire Insurance ──────────────────────────────────────────────────────────
+
+model FireInsurance {
+  id                   Int                @id @default(autoincrement())
+  policyNumber         String             @unique @db.VarChar(100) @map("policy_number")
+  insuranceCompanyName String             @db.VarChar(150)         @map("insurance_company_name")
+  insuredName          String             @db.VarChar(150)         @map("insured_name")
+  mobileNumber         String             @db.VarChar(20)          @map("mobile_number")
+  email                String?            @db.VarChar(191)
+  address              String?            @db.Text
+  gstNumber            String?            @db.VarChar(50)          @map("gst_number")
+  businessType         String?            @db.VarChar(200)         @map("business_type")
+  policyStartDate      DateTime           @db.Date                 @map("policy_start_date")
+  policyEndDate        DateTime           @db.Date                 @map("policy_end_date")
+  renewalDate          DateTime           @db.Date                 @map("renewal_date")
+  policyStatus         FirePolicyStatus   @default(ACTIVE)         @map("policy_status")
+  sumInsured           Decimal            @db.Decimal(14,2)        @map("sum_insured")
+  netPremium           Decimal            @db.Decimal(10,2)        @map("net_premium")
+  cgst                 Decimal?           @db.Decimal(10,2)
+  sgst                 Decimal?           @db.Decimal(10,2)
+  stampDuty            Decimal?           @db.Decimal(10,2)        @map("stamp_duty")
+  totalPremium         Decimal            @db.Decimal(10,2)        @map("total_premium")
+  receiptNumber        String?            @db.VarChar(100)         @map("receipt_number")
+  receiptDate          DateTime?          @db.Date                 @map("receipt_date")
+  agentName            String?            @db.VarChar(100)         @map("agent_name")
+  agentCode            String?            @db.VarChar(50)          @map("agent_code")
+  financierName        String?            @db.VarChar(200)         @map("financier_name")
+  customerType         FireCustomerType   @default(NEW)            @map("customer_type")
+  leadSource           String?            @db.VarChar(100)         @map("lead_source")
+  remarks              String?            @db.Text
+  policyDocument       String?            @db.VarChar(500)         @map("policy_document")
+  createdAt            DateTime           @default(now())          @map("created_at")
+  updatedAt            DateTime           @updatedAt               @map("updated_at")
+  renewals             FireInsuranceRenewal[]
+
+  @@map("fire_insurance")
+}
+
+model FireInsuranceRenewal {
+  id              Int           @id @default(autoincrement())
+  fireInsuranceId Int           @map("fire_insurance_id")
+  fireInsurance   FireInsurance @relation(fields: [fireInsuranceId], references: [id], onDelete: Cascade)
+  status          RenewalStatus @default(CONTACTED)
+  notes           String?       @db.Text
+  renewedDate     DateTime?     @map("renewed_date")
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt      @map("updated_at")
+
+  @@map("fire_insurance_renewals")
+}
+
+// ─── Labour Insurance ────────────────────────────────────────────────────────
+
+model LabourInsurance {
+  id                   Int                  @id @default(autoincrement())
+  policyNumber         String               @unique @db.VarChar(100) @map("policy_number")
+  insuranceCompanyName String               @db.VarChar(150)         @map("insurance_company_name")
+  insuredName          String               @db.VarChar(150)         @map("insured_name")
+  mobileNumber         String               @db.VarChar(20)          @map("mobile_number")
+  email                String?              @db.VarChar(191)
+  address              String?              @db.Text
+  businessDescription  String?              @db.Text                 @map("business_description")
+  gstNumber            String?              @db.VarChar(50)          @map("gst_number")
+  intermediaryCode     String?              @db.VarChar(50)          @map("intermediary_code")
+  intermediaryName     String?              @db.VarChar(150)         @map("intermediary_name")
+  policyStartDate      DateTime             @db.Date                 @map("policy_start_date")
+  policyEndDate        DateTime             @db.Date                 @map("policy_end_date")
+  renewalDate          DateTime             @db.Date                 @map("renewal_date")
+  policyStatus         LabourPolicyStatus   @default(ACTIVE)         @map("policy_status")
+  numberOfEmployees    Int?                 @map("number_of_employees")
+  wagesPerEmployee     Decimal?             @db.Decimal(12,2)        @map("wages_per_employee")
+  totalDeclaredWages   Decimal?             @db.Decimal(14,2)        @map("total_declared_wages")
+  premium              Decimal              @db.Decimal(10,2)
+  cgst                 Decimal?             @db.Decimal(10,2)
+  sgst                 Decimal?             @db.Decimal(10,2)
+  totalPremium         Decimal              @db.Decimal(10,2)        @map("total_premium")
+  receiptNumber        String?              @db.VarChar(100)         @map("receipt_number")
+  receiptDate          DateTime?            @db.Date                 @map("receipt_date")
+  labourPolicyType     LabourPolicyType     @default(UNNAMED)        @map("labour_policy_type")
+  customerType         LabourCustomerType   @default(NEW)            @map("customer_type")
+  leadSource           String?              @db.VarChar(100)         @map("lead_source")
+  remarks              String?              @db.Text
+  policyDocument       String?              @db.VarChar(500)         @map("policy_document")
+  createdAt            DateTime             @default(now())          @map("created_at")
+  updatedAt            DateTime             @updatedAt               @map("updated_at")
+  renewals             LabourInsuranceRenewal[]
+
+  @@map("labour_insurance")
+}
+
+model LabourInsuranceRenewal {
+  id                Int             @id @default(autoincrement())
+  labourInsuranceId Int             @map("labour_insurance_id")
+  labourInsurance   LabourInsurance @relation(fields: [labourInsuranceId], references: [id], onDelete: Cascade)
+  status            RenewalStatus   @default(CONTACTED)
+  notes             String?         @db.Text
+  renewedDate       DateTime?       @map("renewed_date")
+  createdAt         DateTime        @default(now()) @map("created_at")
+  updatedAt         DateTime        @updatedAt      @map("updated_at")
+
+  @@map("labour_insurance_renewals")
+}
+
+enum FirePolicyStatus {
+  ACTIVE
+  EXPIRED
+  PENDING_RENEWAL
+  CANCELLED
+}
+
+enum FireCustomerType {
+  NEW
+  RENEWAL
+}
+
+enum LabourPolicyStatus {
+  ACTIVE
+  EXPIRED
+  PENDING_RENEWAL
+  CANCELLED
+}
+
+enum LabourPolicyType {
+  UNNAMED
+  NAMED
+}
+
+enum LabourCustomerType {
+  NEW
+  RENEWAL
 }

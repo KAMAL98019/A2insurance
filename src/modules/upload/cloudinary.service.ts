@@ -2,16 +2,39 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
 import { Readable } from 'stream';
 
-export type UploadFolder = 'rc' | 'insurance' | 'aadhaar' | 'pan' | 'photo' | 'od' | 'tp';
+export type UploadFolder =
+  | 'rc' | 'insurance' | 'aadhaar' | 'pan' | 'photo' | 'od' | 'tp'
+  | 'health_policy' | 'health_id' | 'health_medical'
+  | 'fire_policy' | 'labour_policy';
 
 const ALLOWED_MIME: Record<UploadFolder, string[]> = {
-  rc:        ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-  insurance: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-  aadhaar:   ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-  pan:       ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-  photo:     ['image/jpeg', 'image/png', 'image/webp'],
-  od:        ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
-  tp:        ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  rc:             ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  insurance:      ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  aadhaar:        ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  pan:            ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  photo:          ['image/jpeg', 'image/png', 'image/webp'],
+  od:             ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  tp:             ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  health_policy:  ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  health_id:      ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  health_medical: ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  fire_policy:    ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+  labour_policy:  ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+};
+
+const CLOUDINARY_PATH: Record<UploadFolder, string> = {
+  rc:             'a2insurance/vehicle/rc',
+  insurance:      'a2insurance/vehicle/insurance',
+  aadhaar:        'a2insurance/vehicle/aadhaar',
+  pan:            'a2insurance/vehicle/pan',
+  photo:          'a2insurance/vehicle/photo',
+  od:             'a2insurance/vehicle/od',
+  tp:             'a2insurance/vehicle/tp',
+  health_policy:  'a2insurance/health_insurance/policy',
+  health_id:      'a2insurance/health_insurance/id_proof',
+  health_medical: 'a2insurance/health_insurance/medical',
+  fire_policy:    'a2insurance/fire_insurance/policy',
+  labour_policy:  'a2insurance/labour_insurance/policy',
 };
 
 @Injectable()
@@ -77,7 +100,7 @@ export class CloudinaryService {
     return new Promise((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(
         {
-          folder: `a2insurance/${folder}`,
+          folder: CLOUDINARY_PATH[folder],
           resource_type: file.mimetype === 'application/pdf' ? 'raw' : 'image',
           use_filename: false,
           unique_filename: true,

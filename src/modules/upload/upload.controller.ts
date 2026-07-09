@@ -106,4 +106,49 @@ export class UploadController {
   uploadTp(@UploadedFile(new ParseFilePipe()) file: Express.Multer.File) {
     return this.handleUpload(file, 'tp');
   }
+
+  @Post('health-policy')
+  @ApiOperation({ summary: 'Upload health insurance policy document (image or PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  uploadHealthPolicy(@UploadedFile(new ParseFilePipe()) file: Express.Multer.File) {
+    return this.handleUpload(file, 'health_policy');
+  }
+
+  @Post('health-id')
+  @ApiOperation({ summary: 'Upload health insurance ID proof (image or PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  uploadHealthId(@UploadedFile(new ParseFilePipe()) file: Express.Multer.File) {
+    return this.handleUpload(file, 'health_id');
+  }
+
+  @Post('health-medical')
+  @ApiOperation({ summary: 'Upload health insurance medical document (image or PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  uploadHealthMedical(@UploadedFile(new ParseFilePipe()) file: Express.Multer.File) {
+    return this.handleUpload(file, 'health_medical');
+  }
+
+  @Post('fire-policy')
+  @ApiOperation({ summary: 'Upload fire insurance policy document (image or PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  uploadFirePolicy(@UploadedFile(new ParseFilePipe()) file: Express.Multer.File) {
+    return this.handleUpload(file, 'fire_policy');
+  }
+
+  @Post('labour-policy')
+  @ApiOperation({ summary: 'Upload labour insurance policy document (image or PDF)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  uploadLabourPolicy(@UploadedFile(new ParseFilePipe()) file: Express.Multer.File) {
+    return this.handleUpload(file, 'labour_policy');
+  }
 }

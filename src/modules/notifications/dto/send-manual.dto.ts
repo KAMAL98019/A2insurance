@@ -11,4 +11,9 @@ export class SendManualDto {
   @IsInt()
   @IsPositive()
   vehicleRecordId?: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  healthInsuranceId?: number;
 }
