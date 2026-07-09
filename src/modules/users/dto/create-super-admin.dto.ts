@@ -1,5 +1,5 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsString, Length, Matches, IsOptional, IsArray, IsInt } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsString, Length, Matches } from 'class-validator';
 
 export class CreateSuperAdminDto {
   @ApiProperty({ example: 'Erode Super Admin' })
@@ -23,10 +23,4 @@ export class CreateSuperAdminDto {
     message: 'Password must contain at least one uppercase letter, one lowercase letter, and one number',
   })
   password: string;
-
-  @ApiPropertyOptional({ example: [1, 2], description: 'Location IDs this Super Admin will control' })
-  @IsOptional()
-  @IsArray()
-  @IsInt({ each: true })
-  locationIds?: number[];
 }

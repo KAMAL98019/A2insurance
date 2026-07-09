@@ -54,12 +54,8 @@ export class UsersService {
       },
     });
 
-    if (dto.locationIds?.length) {
-      await this.prisma.userLocation.createMany({
-        data: dto.locationIds.map((locationId) => ({ userId: user.id, locationId, assignedById: createdById })),
-      });
-    }
-
+    // Super Admin has unrestricted access to every location (see
+    // hasUnrestrictedLocationAccess) — no per-location assignment needed.
     const { password: _, ...safe } = user;
     return safe;
   }
