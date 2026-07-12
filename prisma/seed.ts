@@ -9,10 +9,10 @@ async function main() {
   // ── Users ────────────────────────────────────────────────────────────────
   const userSeeds = [
     {
-      name: 'Admin User',
-      email: 'admin@a2insurance.com',
-      phoneNumber: '+1 555 000 0001',
-      password: await bcrypt.hash('Admin1234', SALT),
+      name: 'MasterAdmin User',
+      email: 'master@a2insurance.com',
+      phoneNumber: '+91 9842744566',
+      password: await bcrypt.hash('Master1234', SALT),
       role: Role.MASTER_ADMIN,
     },
     // {
@@ -34,16 +34,16 @@ async function main() {
   }
 
   // ── Default Categories ───────────────────────────────────────────────────
-  const defaultCategories = ['TW', 'CAR', 'COMMERCIAL'];
+  // const defaultCategories = ['TW', 'CAR', 'COMMERCIAL'];
 
-  for (const name of defaultCategories) {
-    await prisma.vehicleCategory.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    console.log(`✓ Category: ${name}`);
-  }
+  // for (const name of defaultCategories) {
+  //   await prisma.vehicleCategory.upsert({
+  //     where: { name },
+  //     update: {},
+  //     create: { name },
+  //   });
+  //   console.log(`✓ Category: ${name}`);
+  // }
 }
 
 main()

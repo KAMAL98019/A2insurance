@@ -121,6 +121,18 @@ model LeadSource {
   @@map("lead_sources")
 }
 
+// ─── Insurance Companies ─────────────────────────────────────────────────────
+
+model InsuranceCompany {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique @db.VarChar(150)
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("insurance_companies")
+}
+
 // ─── Vehicle Categories ──────────────────────────────────────────────────────
 
 model VehicleCategory {
