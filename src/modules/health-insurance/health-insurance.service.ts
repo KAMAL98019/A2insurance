@@ -185,8 +185,8 @@ export class HealthInsuranceService {
     });
   }
 
-  async getStats(actor: Express.User) {
-    const locationWhere = await this.accessControl.buildLocationScopeWhere(actor);
+  async getStats(actor: Express.User, requestedLocationId?: number) {
+    const locationWhere = await this.accessControl.buildLocationScopeWhere(actor, requestedLocationId);
     const now        = new Date();
     const in30Days   = new Date();
     in30Days.setDate(in30Days.getDate() + 30);

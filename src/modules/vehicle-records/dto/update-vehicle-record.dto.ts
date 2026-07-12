@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsDateString, IsInt, IsOptional, IsString, Length, Matches } from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, Length, Matches, ValidateIf } from 'class-validator';
 
 export class UpdateVehicleRecordDto {
   @ApiPropertyOptional({ example: 1, description: 'Reassign to a different location (Master/Super Admin only, in practice)' })
@@ -22,7 +22,7 @@ export class UpdateVehicleRecordDto {
   cellNumber?: string;
 
   @ApiPropertyOptional({ example: '+91 98765 43211' })
-  @IsOptional()
+  @ValidateIf((o) => !!o.cellNumberAlt)
   @IsString()
   @Matches(/^[+\d\s\-()\s]{7,20}$/, { message: 'Invalid secondary number' })
   cellNumberAlt?: string;

@@ -19,7 +19,9 @@ export class LabourInsuranceController {
   findAll(@Query() q: QueryLabourInsuranceDto, @CurrentUser() user: Express.User) { return this.service.findAll(user, q); }
 
   @Get('stats') @RequireModulePermission(MODULE, 'view')
-  getStats(@CurrentUser() user: Express.User) { return this.service.getStats(user); }
+  getStats(@CurrentUser() user: Express.User, @Query('locationId') locationId?: string) {
+    return this.service.getStats(user, locationId ? Number(locationId) : undefined);
+  }
 
   @Get(':id') @RequireModulePermission(MODULE, 'view')
   findOne(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: Express.User) { return this.service.findOne(id, user); }

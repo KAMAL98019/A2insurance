@@ -111,8 +111,8 @@ export class FireInsuranceService {
     return this.prisma.fireInsurance.delete({ where: { id } });
   }
 
-  async getStats(actor: Express.User) {
-    const locationWhere = await this.accessControl.buildLocationScopeWhere(actor);
+  async getStats(actor: Express.User, requestedLocationId?: number) {
+    const locationWhere = await this.accessControl.buildLocationScopeWhere(actor, requestedLocationId);
     const now = new Date();
     const in30 = new Date();
     in30.setDate(in30.getDate() + 30);

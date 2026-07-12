@@ -35,8 +35,8 @@ export class HealthInsuranceController {
   @Get('stats')
   @RequireModulePermission(MODULE, 'view')
   @ApiOperation({ summary: 'Get health insurance dashboard stats' })
-  getStats(@CurrentUser() user: Express.User) {
-    return this.service.getStats(user);
+  getStats(@CurrentUser() user: Express.User, @Query('locationId') locationId?: string) {
+    return this.service.getStats(user, locationId ? Number(locationId) : undefined);
   }
 
   @Get('upcoming-renewals')
