@@ -890,7 +890,11 @@ export class NotificationsService {
       };
     }
 
-    const message = MSG_PREFIX + dto.message;
+    // Unlike the automated alerts, the caller composes this message
+    // client-side and can see/edit it before sending — so the "A2insurance
+    // care:" prefix is added there (in each table's message builder) instead
+    // of here, so what the user previews is exactly what gets sent.
+    const message = dto.message;
 
     const log = await this.prisma.notificationLog.create({
       data: {
