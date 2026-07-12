@@ -76,4 +76,9 @@ export class CreateVehicleRecordDto {
   @IsOptional()
   @IsString()
   tpDocument?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  remarks?: string;
 }

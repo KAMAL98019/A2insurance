@@ -167,6 +167,7 @@ model VehicleRecord {
   photo             String?  @db.VarChar(500)
   odDocument        String?  @db.VarChar(500) @map("od_document")
   tpDocument        String?  @db.VarChar(500) @map("tp_document")
+  remarks           String?  @db.Text
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
   renewals          VehicleRenewal[]
@@ -223,6 +224,10 @@ model NotificationLog {
   vehicleRecord      VehicleRecord?   @relation(fields: [vehicleRecordId], references: [id], onDelete: SetNull)
   healthInsuranceId  Int?             @map("health_insurance_id")
   healthInsurance    HealthInsurance? @relation(fields: [healthInsuranceId], references: [id], onDelete: SetNull)
+  fireInsuranceId    Int?             @map("fire_insurance_id")
+  fireInsurance      FireInsurance?   @relation(fields: [fireInsuranceId], references: [id], onDelete: SetNull)
+  labourInsuranceId  Int?             @map("labour_insurance_id")
+  labourInsurance    LabourInsurance? @relation(fields: [labourInsuranceId], references: [id], onDelete: SetNull)
   mobileNumber       String           @db.VarChar(20)  @map("mobile_number")
   notificationType   NotificationType @map("notification_type")
   message            String           @db.Text
@@ -412,6 +417,7 @@ model FireInsurance {
   createdAt            DateTime           @default(now())          @map("created_at")
   updatedAt            DateTime           @updatedAt               @map("updated_at")
   renewals             FireInsuranceRenewal[]
+  notificationLogs     NotificationLog[]
 
   @@map("fire_insurance")
 }
@@ -466,6 +472,7 @@ model LabourInsurance {
   createdAt            DateTime             @default(now())          @map("created_at")
   updatedAt            DateTime             @updatedAt               @map("updated_at")
   renewals             LabourInsuranceRenewal[]
+  notificationLogs     NotificationLog[]
 
   @@map("labour_insurance")
 }

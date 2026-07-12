@@ -66,4 +66,8 @@ export class UpdateVehicleRecordDto {
   @ApiPropertyOptional()
   @IsOptional() @IsString()
   tpDocument?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional() @IsString()
+  remarks?: string;
 }

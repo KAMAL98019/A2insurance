@@ -7,7 +7,10 @@ export interface ActorUser {
   role: string;
 }
 
-const PERMISSION_FIELD: Record<PermissionAction, 'canView' | 'canCreate' | 'canUpdate' | 'canDelete' | 'canExport'> = {
+const PERMISSION_FIELD: Record<
+  PermissionAction,
+  'canView' | 'canCreate' | 'canUpdate' | 'canDelete' | 'canExport'
+> = {
   view: 'canView',
   create: 'canCreate',
   update: 'canUpdate',
@@ -21,7 +24,7 @@ const PERMISSION_FIELD: Record<PermissionAction, 'canView' | 'canCreate' | 'canU
  * records). Location CATALOG management (create/edit/deactivate a branch)
  * stays Master Admin only — see LocationsController's @Roles.
  */
-function hasUnrestrictedLocationAccess(role: string): boolean {
+export function hasUnrestrictedLocationAccess(role: string): boolean {
   return role === 'MASTER_ADMIN' || role === 'SUPER_ADMIN';
 }
 
@@ -43,7 +46,9 @@ export class AccessControlService {
   async assertCanAccessLocation(actor: ActorUser, locationId: number | null) {
     if (hasUnrestrictedLocationAccess(actor.role)) return;
     if (locationId === null) {
-      throw new ForbiddenException('This record has no location assigned — Master Admin access required');
+      throw new ForbiddenException(
+        'This record has no location assigned — Master Admin access required',
+      );
     }
     const allowed = await this.getAccessibleLocationIds(actor);
     if (allowed && !allowed.includes(locationId)) {
@@ -52,7 +57,10 @@ export class AccessControlService {
   }
 
   /** Builds a Prisma `where` fragment scoping a query by the actor's accessible locations. */
-  async buildLocationScopeWhere(actor: ActorUser, requestedLocationId?: number): Promise<Record<string, unknown>> {
+  async buildLocationScopeWhere(
+    actor: ActorUser,
+    requestedLocationId?: number,
+  ): Promise<Record<string, unknown>> {
     if (hasUnrestrictedLocationAccess(actor.role)) {
       return requestedLocationId ? { locationId: requestedLocationId } : {};
     }
@@ -72,12 +80,16 @@ export class AccessControlService {
   async assertCanManageUser(actor: ActorUser, targetUserId: number) {
     if (actor.role === 'MASTER_ADMIN') return;
 
-    const target = await this.prisma.user.findUnique({ where: { id: targetUserId } });
+    const target = await this.prisma.user.findUnique({
+      where: { id: targetUserId },
+    });
     if (!target) throw new ForbiddenException('User not found');
 
     if (actor.role === 'SUPER_ADMIN') {
       if (target.role !== 'ADMIN_USER' || target.superAdminId !== actor.id) {
-        throw new ForbiddenException('You can only manage Admin Users you created');
+        throw new ForbiddenException(
+          'You can only manage Admin Users you created',
+        );
       }
       return;
     }
@@ -89,7 +101,11 @@ export class AccessControlService {
    * Master Admin and Super Admin have unrestricted CRUD within their location scope.
    * Only Admin Users are gated by the per-module permission matrix.
    */
-  async assertModulePermission(actor: ActorUser, moduleName: string, action: PermissionAction) {
+  async assertModulePermission(
+    actor: ActorUser,
+    moduleName: string,
+    action: PermissionAction,
+  ) {
     if (actor.role === 'MASTER_ADMIN' || actor.role === 'SUPER_ADMIN') return;
 
     const perm = await this.prisma.adminUserPermission.findUnique({

@@ -16,4 +16,14 @@ export class SendManualDto {
   @IsInt()
   @IsPositive()
   healthInsuranceId?: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  fireInsuranceId?: number;
+
+  @IsOptional()
+  @IsInt()
+  @IsPositive()
+  labourInsuranceId?: number;
 }
